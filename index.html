@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 카페 경영 시뮬레이션</title>
+    <style>
+        /* =====================================================================
+           1. 디자인 토큰 및 카페 테마 색상 팔레트 정의 (크림, 라떼, 에스프레소 톤)
+           ===================================================================== */
+        :root {
+            --bg-page: #fdfaf6;
+            --bg-pattern: #f5ede2;
+            --bg-card: #ffffff;
+            --bg-subtle: #faf4ec;
+            --bg-input: #fffdfa;
+            --border-light: #eadfce;
+            --border-focus: #b07d4f;
+
+            --espresso: #3b2618;
+            --espresso-mid: #5c3d28;
+            --latte: #8c6239;
+            --caramel: #c88a4b;
+            --cream-accent: #f3e5d3;
+
+            --revenue-color: #c88a4b;
+            --revenue-light: #fdf3e7;
+            --profit-positive: #2e7d5b;
+            --profit-positive-bg: #eef7f3;
+            --profit-negative: #c94a4a;
+            --profit-negative-bg: #fdf1f1;
+            --cost-color: #7c685a;
+
+            --text-main: #2d1e14;
+            --text-sub: #6e5a4b;
+            --text-muted: #968374;
+
+            --shadow-card: 0 10px 28px rgba(59, 38, 24, 0.06), 0 2px 6px rgba(59, 38, 24, 0.04);
+            --shadow-btn: 0 2px 6px rgba(59, 38, 24, 0.08);
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+        }
+
+        /* =====================================================================
+           2. 기본 초기화 및 타이포그래피
+           ===================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            background-color: var(--bg-page);
+            background-image: 
+                radial-gradient(circle at 12% 10%, rgba(200, 138, 75, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 88% 85%, rgba(140, 98, 57, 0.08) 0%, transparent 45%);
+            color: var(--text-main);
+            line-height: 1.5;
+            min-height: 100dvh;
+            padding: 20px 16px 36px;
+        }
+
+        .app-wrapper {
+            width: 100%;
+            max-width: 1040px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* =====================================================================
+           3. 상단 헤더 영역
+           ===================================================================== */
+        .app-header {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .coffee-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--espresso), var(--latte));
+            color: #fffaf3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 6px 14px rgba(59, 38, 24, 0.2);
+        }
+
+        .header-texts h1 {
+            font-size: clamp(1.3rem, 3.2vw, 1.7rem);
+            font-weight: 800;
+            color: var(--espresso);
+            letter-spacing: -0.02em;
+        }
+
+        .header-texts p {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .header-pill {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            color: var(--espresso-mid);
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* =====================================================================
+           4. 반응형 메인 대시보드 레이아웃 (모바일 1열 / 태블릿·PC 2열)
+           ===================================================================== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (min-width: 820px) {
+            body {
+                padding: 32px 24px 44px;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr 1.15fr;
+                gap: 24px;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--espresso);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--caramel);
+            display: inline-block;
+        }
+
+        /* =====================================================================
+           5. 왼쪽 패널: 터치 친화적 입력 컨트롤 영역
+           ===================================================================== */
+        .input-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 15px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(200, 138, 75, 0.16);
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+
+        .label-row label {
+            font-size: 0.96rem;
+            font-weight: 700;
+            color: var(--espresso);
+        }
+
+        .label-hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .stepper-control {
+            display: grid;
+            grid-template-columns: 48px 1fr 48px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .step-btn {
+            height: 48px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            color: var(--espresso);
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-btn);
+            transition: background-color 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+            user-select: none;
+        }
+
+        .step-btn:hover {
+            background: var(--cream-accent);
+            border-color: var(--caramel);
+        }
+
+        .step-btn:active {
+            transform: scale(0.95);
+        }
+
+        .input-field-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .num-input {
+            width: 100%;
+            height: 48px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            background: var(--bg-input);
+            color: var(--espresso);
+            font-family: inherit;
+            font-size: 1.12rem;
+            font-weight: 800;
+            text-align: right;
+            padding: 0 36px 0 12px;
+            font-variant-numeric: tabular-nums;
+            transition: border-color 0.2s ease;
+        }
+
+        .num-input:focus {
+            outline: none;
+            border-color: var(--caramel);
+        }
+
+        /* 브라우저 기본 숫자 스핀 버튼 숨김 (커스텀 +/- 버튼 사용) */
+        .num-input::-webkit-outer-spin-button,
+        .num-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .num-input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .input-unit {
+            position: absolute;
+            right: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            pointer-events: none;
+        }
+
+        /* 범위 슬라이더 스타일 */
+        .range-wrap {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .cafe-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: #e5d6c3;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .cafe-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--espresso);
+            border: 3px solid #fffaf3;
+            box-shadow: 0 2px 6px rgba(59, 38, 24, 0.35);
+            cursor: pointer;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        .cafe-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: var(--latte);
+        }
+
+        .cafe-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--espresso);
+            border: 3px solid #fffaf3;
+            box-shadow: 0 2px 6px rgba(59, 38, 24, 0.35);
+            cursor: pointer;
+        }
+
+        .range-ticks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* 인라인 유효성 안내 및 경고 배너 */
+        .validation-banner {
+            display: none;
+            margin-top: 14px;
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            line-height: 1.4;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .validation-banner.visible {
+            display: flex;
+        }
+
+        .validation-banner.warn {
+            background-color: #fff8e7;
+            border: 1px solid #f2d28b;
+            color: #8a5a00;
+        }
+
+        .validation-banner.danger {
+            background-color: var(--profit-negative-bg);
+            border: 1px solid #f0baba;
+            color: var(--profit-negative);
+        }
+
+        /* 초기화 버튼 */
+        .reset-btn {
+            margin-top: 16px;
+            width: 100%;
+            min-height: 48px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            color: var(--espresso);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .reset-btn:hover {
+            background: var(--cream-accent);
+            border-color: var(--caramel);
+        }
+
+        .reset-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* =====================================================================
+           6. 오른쪽 패널: 실시간 계산 결과 카드 & 막대그래프 영역
+           ===================================================================== */
+        .results-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 520px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .kpi-card.highlight {
+                grid-column: span 2;
+            }
+        }
+
+        .kpi-card {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .kpi-card.revenue {
+            background: var(--revenue-light);
+            border-color: #edd5b8;
+        }
+
+        .kpi-card.highlight {
+            background: var(--profit-positive-bg);
+            border: 1.5px solid #b9dfce;
+        }
+
+        .kpi-card.highlight.loss {
+            background: var(--profit-negative-bg);
+            border-color: #ecc0c0;
+        }
+
+        .kpi-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .kpi-label {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-sub);
+        }
+
+        .kpi-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.75);
+            color: var(--espresso-mid);
+            border: 1px solid rgba(59, 38, 24, 0.08);
+        }
+
+        .kpi-value {
+            font-size: clamp(1.35rem, 3.5vw, 1.7rem);
+            font-weight: 900;
+            color: var(--espresso);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        .kpi-card.revenue .kpi-value {
+            color: #9e6328;
+        }
+
+        .kpi-card.highlight .kpi-value {
+            color: var(--profit-positive);
+        }
+
+        .kpi-card.highlight.loss .kpi-value {
+            color: var(--profit-negative);
+        }
+
+        .kpi-subtext {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        /* =====================================================================
+           7. 반응형 HTML5 캔버스 막대그래프 컨테이너
+           ===================================================================== */
+        .chart-header-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-sub);
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-swatch {
+            width: 11px;
+            height: 11px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .chart-canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 270px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        @media (min-width: 820px) {
+            .chart-canvas-wrapper {
+                height: 295px;
+            }
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* =====================================================================
+           8. 하단 안내 문구 (면책 조항)
+           ===================================================================== */
+        .disclaimer-footer {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            font-size: 0.84rem;
+            color: var(--text-sub);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .disclaimer-footer strong {
+            color: var(--espresso);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- 상단 헤더 -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="coffee-badge" aria-hidden="true">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+                        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+                        <line x1="6" y1="2" x2="6" y2="4"/>
+                        <line x1="10" y1="2" x2="10" y2="4"/>
+                        <line x1="14" y1="2" x2="14" y2="4"/>
+                    </svg>
+                </div>
+                <div class="header-texts">
+                    <h1>나만의 카페 경영 시뮬레이션</h1>
+                    <p>음료 가격과 재료비, 판매량에 따른 하루 예상 손익을 간편하게 확인해 보세요</p>
+                </div>
+            </div>
+            <div class="header-pill" aria-label="실시간 자동 계산 모드">
+                <span>☕</span>
+                <span>실시간 자동 계산</span>
+            </div>
+        </header>
+
+        <!-- 메인 대시보드 -->
+        <main class="dashboard-grid">
+            <!-- 왼쪽: 운영 조건 입력 카드 -->
+            <section class="card" aria-labelledby="inputSectionTitle">
+                <div class="section-header">
+                    <h2 id="inputSectionTitle" class="section-title">
+                        <span class="section-dot" aria-hidden="true"></span>
+                        카페 운영 조건 입력
+                    </h2>
+                </div>
+
+                <div class="input-list">
+                    <!-- 1. 커피 한 잔의 판매 가격 -->
+                    <div class="input-group">
+                        <div class="label-row">
+                            <label for="priceInput">커피 한 잔의 판매 가격</label>
+                            <span class="label-hint">기본 4,000원</span>
+                        </div>
+                        <div class="stepper-control">
+                            <button type="button" class="step-btn" data-target="price" data-step="-500" aria-label="판매 가격 500원 감소">−</button>
+                            <div class="input-field-wrap">
+                                <input type="number" id="priceInput" class="num-input" value="4000" min="0" max="100000" step="100" inputmode="numeric">
+                                <span class="input-unit">원</span>
+                            </div>
+                            <button type="button" class="step-btn" data-target="price" data-step="500" aria-label="판매 가격 500원 증가">+</button>
+                        </div>
+                        <div class="range-wrap">
+                            <input type="range" id="priceSlider" class="cafe-slider" min="0" max="15000" step="100" value="4000" aria-label="판매 가격 조절 슬라이더">
+                            <div class="range-ticks">
+                                <span>0원</span>
+                                <span>7,500원</span>
+                                <span>15,000원</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 커피 한 잔의 재료비 -->
+                    <div class="input-group">
+                        <div class="label-row">
+                            <label for="costInput">커피 한 잔의 재료비</label>
+                            <span class="label-hint">기본 1,500원</span>
+                        </div>
+                        <div class="stepper-control">
+                            <button type="button" class="step-btn" data-target="cost" data-step="-100" aria-label="재료비 100원 감소">−</button>
+                            <div class="input-field-wrap">
+                                <input type="number" id="costInput" class="num-input" value="1500" min="0" max="100000" step="100" inputmode="numeric">
+                                <span class="input-unit">원</span>
+                            </div>
+                            <button type="button" class="step-btn" data-target="cost" data-step="100" aria-label="재료비 100원 증가">+</button>
+                        </div>
+                        <div class="range-wrap">
+                            <input type="range" id="costSlider" class="cafe-slider" min="0" max="10000" step="100" value="1500" aria-label="재료비 조절 슬라이더">
+                            <div class="range-ticks">
+                                <span>0원</span>
+                                <span>5,000원</span>
+                                <span>10,000원</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 하루 예상 판매량 -->
+                    <div class="input-group">
+                        <div class="label-row">
+                            <label for="volumeInput">하루 예상 판매량</label>
+                            <span class="label-hint">기본 50잔</span>
+                        </div>
+                        <div class="stepper-control">
+                            <button type="button" class="step-btn" data-target="volume" data-step="-5" aria-label="판매량 5잔 감소">−</button>
+                            <div class="input-field-wrap">
+                                <input type="number" id="volumeInput" class="num-input" value="50" min="0" max="10000" step="1" inputmode="numeric">
+                                <span class="input-unit">잔</span>
+                            </div>
+                            <button type="button" class="step-btn" data-target="volume" data-step="5" aria-label="판매량 5잔 증가">+</button>
+                        </div>
+                        <div class="range-wrap">
+                            <input type="range" id="volumeSlider" class="cafe-slider" min="0" max="500" step="5" value="50" aria-label="판매량 조절 슬라이더">
+                            <div class="range-ticks">
+                                <span>0잔</span>
+                                <span>250잔</span>
+                                <span>500잔</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 입력값 유효성 경고 메시지 영역 -->
+                <div id="validationBanner" class="validation-banner" role="status" aria-live="polite">
+                    <span id="validationIcon" aria-hidden="true">⚠️</span>
+                    <span id="validationMessage"></span>
+                </div>
+
+                <!-- 기본값 초기화 버튼 -->
+                <button type="button" id="resetBtn" class="reset-btn">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    <span>기본값으로 초기화 (4,000원 / 1,500원 / 50잔)</span>
+                </button>
+            </section>
+
+            <!-- 오른쪽: 손익 계산 결과 및 비교 그래프 카드 -->
+            <div class="results-column">
+                <!-- 계산 결과 요약 카드 -->
+                <section class="card" aria-labelledby="resultSectionTitle">
+                    <div class="section-header">
+                        <h2 id="resultSectionTitle" class="section-title">
+                            <span class="section-dot" aria-hidden="true"></span>
+                            하루 예상 손익 요약
+                        </h2>
+                        <span id="unitMarginBadge" class="kpi-badge">잔당 이익 2,500원</span>
+                    </div>
+
+                    <div class="kpi-grid">
+                        <!-- 하루 예상 매출 -->
+                        <div class="kpi-card revenue">
+                            <div class="kpi-top">
+                                <span class="kpi-label">하루 예상 매출</span>
+                                <span id="volumeSummaryBadge" class="kpi-badge">50잔 판매</span>
+                            </div>
+                            <div id="revenueOutput" class="kpi-value">200,000원</div>
+                            <div id="revenueFormula" class="kpi-subtext">4,000원 × 50잔</div>
+                        </div>
+
+                        <!-- 전체 재료비 -->
+                        <div class="kpi-card">
+                            <div class="kpi-top">
+                                <span class="kpi-label">전체 재료비</span>
+                                <span id="costRatioBadge" class="kpi-badge">원가율 37.5%</span>
+                            </div>
+                            <div id="totalCostOutput" class="kpi-value">75,000원</div>
+                            <div id="costFormula" class="kpi-subtext">1,500원 × 50잔</div>
+                        </div>
+
+                        <!-- 재료비 제외 이익 -->
+                        <div id="profitCard" class="kpi-card highlight">
+                            <div class="kpi-top">
+                                <span class="kpi-label">재료비 제외 이익</span>
+                                <span id="marginRateBadge" class="kpi-badge">이익률 62.5%</span>
+                            </div>
+                            <div id="netProfitOutput" class="kpi-value">125,000원</div>
+                            <div id="profitFormula" class="kpi-subtext">예상 매출 200,000원 − 전체 재료비 75,000원</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 막대그래프 비교 카드 -->
+                <section class="card" aria-labelledby="chartSectionTitle">
+                    <div class="section-header">
+                        <h2 id="chartSectionTitle" class="section-title">
+                            <span class="section-dot" aria-hidden="true"></span>
+                            매출 vs 재료비 제외 이익 비교
+                        </h2>
+                        <div class="chart-header-meta">
+                            <span class="legend-item">
+                                <span class="legend-swatch" style="background: #c88a4b;"></span>
+                                매출
+                            </span>
+                            <span class="legend-item">
+                                <span id="profitLegendSwatch" class="legend-swatch" style="background: #2e7d5b;"></span>
+                                이익
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="chartWrapper" class="chart-canvas-wrapper">
+                        <canvas id="comparisonChart" role="img" aria-label="하루 예상 매출과 재료비 제외 이익을 비교하는 막대그래프"></canvas>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- 하단 안내 문구 -->
+        <footer class="disclaimer-footer">
+            <strong>※ 안내:</strong> 이 시뮬레이션은 실제 매출을 예측하는 것이 아니라 사용자가 입력한 조건을 바탕으로 단순 계산한 결과입니다. (임대료, 인건비, 세금 등 기타 고정비는 포함되지 않았습니다.)
+        </footer>
+    </div>
+
+    <script>
+        /**
+         * =====================================================================
+         * 나만의 카페 경영 시뮬레이션 - 실시간 계산 및 반응형 차트 스크립트
+         * =====================================================================
+         */
+        (function () {
+            // 1. 기본 설정값 및 허용 범위 상수
+            const DEFAULTS = {
+                price: 4000,
+                cost: 1500,
+                volume: 50
+            };
+
+            const LIMITS = {
+                price:  { min: 0, max: 100000, sliderMax: 15000 },
+                cost:   { min: 0, max: 100000, sliderMax: 10000 },
+                volume: { min: 0, max: 10000,  sliderMax: 500 }
+            };
+
+            // 2. DOM 요소 참조
+            const priceInput = document.getElementById('priceInput');
+            const priceSlider = document.getElementById('priceSlider');
+
+            const costInput = document.getElementById('costInput');
+            const costSlider = document.getElementById('costSlider');
+
+            const volumeInput = document.getElementById('volumeInput');
+            const volumeSlider = document.getElementById('volumeSlider');
+
+            const stepButtons = document.querySelectorAll('.step-btn');
+            const resetBtn = document.getElementById('resetBtn');
+
+            const validationBanner = document.getElementById('validationBanner');
+            const validationIcon = document.getElementById('validationIcon');
+            const validationMessage = document.getElementById('validationMessage');
+
+            // 결과 출력 요소
+            const revenueOutput = document.getElementById('revenueOutput');
+            const totalCostOutput = document.getElementById('totalCostOutput');
+            const netProfitOutput = document.getElementById('netProfitOutput');
+
+            const revenueFormula = document.getElementById('revenueFormula');
+            const costFormula = document.getElementById('costFormula');
+            const profitFormula = document.getElementById('profitFormula');
+
+            const unitMarginBadge = document.getElementById('unitMarginBadge');
+            const volumeSummaryBadge = document.getElementById('volumeSummaryBadge');
+            const costRatioBadge = document.getElementById('costRatioBadge');
+            const marginRateBadge = document.getElementById('marginRateBadge');
+            const profitCard = document.getElementById('profitCard');
+            const profitLegendSwatch = document.getElementById('profitLegendSwatch');
+
+            // 캔버스 차트 요소
+            const chartWrapper = document.getElementById('chartWrapper');
+            const canvas = document.getElementById('comparisonChart');
+            const ctx = canvas.getContext('2d');
+
+            // 현재 유효한 상태 값
+            let state = {
+                price: DEFAULTS.price,
+                cost: DEFAULTS.cost,
+                volume: DEFAULTS.volume,
+                revenue: 200000,
+                totalCost: 75000,
+                netProfit: 125000
+            };
+
+            let warningTimeout = null;
+
+            /**
+             * 숫자를 천 단위 쉼표가 포함된 한국 원화 형식으로 변환합니다.
+             * 예: 200000 -> "200,000원", -15000 -> "-15,000원"
+             */
+            function formatWon(amount) {
+                const rounded = Math.round(amount);
+                return rounded.toLocaleString('ko-KR') + '원';
+            }
+
+            /**
+             * 판매량을 천 단위 쉼표가 포함된 잔 단위로 변환합니다.
+             */
+            function formatCups(count) {
+                return Math.round(count).toLocaleString('ko-KR') + '잔';
+            }
+
+            /**
+             * 상단/하단 경고 배너를 표시하거나 숨깁니다.
+             */
+            function showValidationNotice(type, text, autoHideMs = 0) {
+                if (warningTimeout) {
+                    clearTimeout(warningTimeout);
+                    warningTimeout = null;
+                }
+
+                if (!text) {
+                    validationBanner.className = 'validation-banner';
+                    validationMessage.textContent = '';
+                    return;
+                }
+
+                validationIcon.textContent = type === 'danger' ? '🚨' : '⚠️';
+                validationMessage.textContent = text;
+                validationBanner.className = `validation-banner visible ${type}`;
+
+                if (autoHideMs > 0) {
+                    warningTimeout = setTimeout(() => {
+                        // 적자 상태가 유지 중이라면 적자 안내로 전환, 아니면 숨김
+                        if (state.price < state.cost && state.volume > 0) {
+                            showValidationNotice('danger', '재료비가 판매 가격보다 높아 판매할수록 손실(적자)이 발생합니다.');
+                        } else {
+                            validationBanner.className = 'validation-banner';
+                        }
+                    }, autoHideMs);
+                }
+            }
+
+            /**
+             * 입력값을 검증하고 정제(음수/NaN/범위 초과 방지)하여 반환합니다.
+             */
+            function sanitizeValue(rawValue, fieldKey, updateInputBox = false) {
+                const limit = LIMITS[fieldKey];
+                const inputEl = fieldKey === 'price' ? priceInput : (fieldKey === 'cost' ? costInput : volumeInput);
+                const sliderEl = fieldKey === 'price' ? priceSlider : (fieldKey === 'cost' ? costSlider : volumeSlider);
+
+                const strVal = String(rawValue).trim();
+
+                // 빈 문자열 입력 중일 때는 계산상 0으로 처리하되, 포커스 아웃 시 0으로 채움
+                if (strVal === '') {
+                    if (updateInputBox) inputEl.value = '0';
+                    sliderEl.value = '0';
+                    return 0;
+                }
+
+                let num = Number(strVal);
+
+                // 숫자가 아닌 잘못된 값(NaN, Infinity) 처리
+                if (!Number.isFinite(num)) {
+                    inputEl.value = state[fieldKey];
+                    showValidationNotice('warn', '올바른 숫자만 입력할 수 있습니다.', 2800);
+                    return state[fieldKey];
+                }
+
+                // 음수 입력 차단
+                if (num < limit.min) {
+                    num = limit.min;
+                    inputEl.value = String(num);
+                    sliderEl.value = String(num);
+                    showValidationNotice('warn', '음수는 입력할 수 없어 0으로 자동 조정되었습니다.', 3000);
+                    return num;
+                }
+
+                // 최대 허용치 초과 제한
+                if (num > limit.max) {
+                    num = limit.max;
+                    inputEl.value = String(num);
+                    showValidationNotice('warn', `최대 입력 가능 범위(${limit.max.toLocaleString('ko-KR')})로 조정되었습니다.`, 3000);
+                } else {
+                    // 소수점 제거 (정수 단위)
+                    num = Math.floor(num);
+                    if (updateInputBox) {
+                        inputEl.value = String(num);
+                    }
+                }
+
+                // 슬라이더 위치 동기화 (슬라이더 최대치 이상인 경우 슬라이더 끝으로 맞춤)
+                sliderEl.value = String(Math.min(num, limit.sliderMax));
+                return num;
+            }
+
+            /**
+             * 입력된 조건으로 매출, 전체 재료비, 재료비 제외 이익을 계산하고 화면을 갱신합니다.
+             */
+            function recalculate() {
+                const revenue = state.price * state.volume;
+                const totalCost = state.cost * state.volume;
+                const netProfit = revenue - totalCost;
+                const unitMargin = state.price - state.cost;
+
+                state.revenue = revenue;
+                state.totalCost = totalCost;
+                state.netProfit = netProfit;
+
+                // 금액 및 수식 텍스트 업데이트
+                revenueOutput.textContent = formatWon(revenue);
+                totalCostOutput.textContent = formatWon(totalCost);
+                netProfitOutput.textContent = formatWon(netProfit);
+
+                revenueFormula.textContent = `${formatWon(state.price)} × ${formatCups(state.volume)}`;
+                costFormula.textContent = `${formatWon(state.cost)} × ${formatCups(state.volume)}`;
+                profitFormula.textContent = `예상 매출 ${formatWon(revenue)} − 전체 재료비 ${formatWon(totalCost)}`;
+
+                // 보조 배지(잔당 이익, 판매량, 원가율, 이익률) 업데이트
+                unitMarginBadge.textContent = `잔당 이익 ${formatWon(unitMargin)}`;
+                volumeSummaryBadge.textContent = `${formatCups(state.volume)} 판매`;
+
+                const costRatio = revenue > 0 ? ((totalCost / revenue) * 100).toFixed(1) : '0.0';
+                const marginRate = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : '0.0';
+
+                costRatioBadge.textContent = `원가율 ${costRatio}%`;
+                marginRateBadge.textContent = `이익률 ${marginRate}%`;
+
+                // 이익 상태(흑자 vs 적자)에 따른 카드 및 범례 색상 전환
+                if (netProfit < 0) {
+                    profitCard.classList.add('loss');
+                    profitLegendSwatch.style.background = '#c94a4a';
+                } else {
+                    profitCard.classList.remove('loss');
+                    profitLegendSwatch.style.background = '#2e7d5b';
+                }
+
+                // 재료비가 판매가보다 큰 경우 지속적 경고 안내 표시
+                if (state.price < state.cost && state.volume > 0) {
+                    showValidationNotice('danger', '재료비가 판매 가격보다 높아 판매할수록 손실(적자)이 발생합니다.');
+                } else if (!warningTimeout) {
+                    showValidationNotice('', '');
+                }
+
+                // 막대그래프 다시 그리기
+                drawChart();
+            }
+
+            /**
+             * =====================================================================
+             * 반응형 HTML5 캔버스 막대그래프 렌더링
+             * (하루 예상 매출 vs 재료비 제외 이익 비교, 음수/0 이익 대응)
+             * =====================================================================
+             */
+            function drawChart() {
+                const rect = chartWrapper.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+
+                if (width <= 0 || height <= 0) return;
+
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = Math.floor(width * dpr);
+                canvas.height = Math.floor(height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                // 1. 배경 클리어
+                ctx.clearRect(0, 0, width, height);
+
+                const isCompact = width < 380;
+                const padTop = 38;
+                const padBottom = 46;
+                const padLeft = isCompact ? 18 : 28;
+                const padRight = isCompact ? 18 : 28;
+
+                const plotWidth = width - padLeft - padRight;
+                const plotHeight = height - padTop - padBottom;
+
+                const rev = state.revenue;
+                const prof = state.netProfit;
+
+                // Y축 스케일 범위 계산 (양수 매출과 양수/음수 이익 모두 수용)
+                const maxVal = Math.max(rev, prof, 10000);
+                const minVal = Math.min(0, prof);
+                const totalRange = (maxVal - minVal) * 1.18; // 상하 여유 공간 18% 확보
+
+                // 0원 기준선 Y 좌표
+                const zeroY = padTop + ((maxVal * 1.12) / totalRange) * plotHeight;
+
+                // 2. 수평 눈금선 그리기
+                ctx.save();
+                ctx.strokeStyle = '#e5d8c7';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+
+                const gridSteps = 3;
+                for (let i = 0; i <= gridSteps; i++) {
+                    const y = padTop + (plotHeight / gridSteps) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(padLeft, y);
+                    ctx.lineTo(width - padRight, y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                // 3. 0원 기준선 (실선 강조)
+                ctx.save();
+                ctx.strokeStyle = '#b9a38c';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(padLeft, zeroY);
+                ctx.lineTo(width - padRight, zeroY);
+                ctx.stroke();
+                ctx.restore();
+
+                // 4. 막대 데이터 정의
+                const barWidth = Math.min(isCompact ? 68 : 96, plotWidth * 0.28);
+                const center1 = padLeft + plotWidth * 0.28;
+                const center2 = padLeft + plotWidth * 0.72;
+
+                const bars = [
+                    {
+                        label: '하루 예상 매출',
+                        value: rev,
+                        centerX: center1,
+                        colorTop: '#d89b5c',
+                        colorBottom: '#b87635',
+                        textColor: '#8c5319'
+                    },
+                    {
+                        label: '재료비 제외 이익',
+                        value: prof,
+                        centerX: center2,
+                        colorTop: prof >= 0 ? '#3b966f' : '#de6262',
+                        colorBottom: prof >= 0 ? '#24694b' : '#b83b3b',
+                        textColor: prof >= 0 ? '#1f6144' : '#b53838'
+                    }
+                ];
+
+                // 픽셀당 금액 비율 계산
+                const scaleFactor = plotHeight / totalRange;
+
+                bars.forEach(bar => {
+                    const barHeight = Math.abs(bar.value) * scaleFactor;
+                    const x = bar.centerX - barWidth / 2;
+                    const isNegative = bar.value < 0;
+                    const y = isNegative ? zeroY : zeroY - barHeight;
+
+                    // 막대 그라데이션 채우기
+                    ctx.save();
+                    const grad = ctx.createLinearGradient(x, y, x, y + Math.max(barHeight, 2));
+                    grad.addColorStop(0, bar.colorTop);
+                    grad.addColorStop(1, bar.colorBottom);
+                    ctx.fillStyle = grad;
+
+                    if (barHeight > 1) {
+                        drawRoundedBar(ctx, x, y, barWidth, barHeight, 10, isNegative);
+                        ctx.fill();
+                    } else {
+                        // 값이 0일 때 얇은 기준 막대 표시
+                        ctx.fillRect(x, zeroY - 2, barWidth, 3);
+                    }
+                    ctx.restore();
+
+                    // 막대 위/아래 금액 라벨 표시
+                    ctx.save();
+                    ctx.font = `800 ${isCompact ? '12px' : '14px'} -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif`;
+                    ctx.fillStyle = bar.textColor;
+                    ctx.textAlign = 'center';
+
+                    const valueText = formatWon(bar.value);
+                    if (isNegative) {
+                        const textY = Math.min(height - padBottom + 14, zeroY + barHeight + 17);
+                        ctx.fillText(valueText, bar.centerX, textY);
+                    } else {
+                        const textY = Math.max(18, y - 9);
+                        ctx.fillText(valueText, bar.centerX, textY);
+                    }
+                    ctx.restore();
+
+                    // 하단 항목명 라벨 표시
+                    ctx.save();
+                    ctx.font = `700 ${isCompact ? '12px' : '13.5px'} -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif`;
+                    ctx.fillStyle = '#3b2618';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(bar.label, bar.centerX, height - 14);
+                    ctx.restore();
+                });
+            }
+
+            /**
+             * 막대그래프용 한쪽 방향(위 또는 아래) 모서리가 둥근 사각형을 그립니다.
+             */
+            function drawRoundedBar(context, x, y, w, h, r, isBottomRounded) {
+                const radius = Math.min(r, w / 2, h / 2);
+                context.beginPath();
+                if (!isBottomRounded) {
+                    // 양수 막대: 상단 모서리만 둥글게
+                    context.moveTo(x, y + h);
+                    context.lineTo(x, y + radius);
+                    context.arcTo(x, y, x + radius, y, radius);
+                    context.lineTo(x + w - radius, y);
+                    context.arcTo(x + w, y, x + w, y + radius, radius);
+                    context.lineTo(x + w, y + h);
+                } else {
+                    // 음수 막대: 하단 모서리만 둥글게
+                    context.moveTo(x, y);
+                    context.lineTo(x + w, y);
+                    context.lineTo(x + w, y + h - radius);
+                    context.arcTo(x + w, y + h, x + w - radius, y + h, radius);
+                    context.lineTo(x + radius, y + h);
+                    context.arcTo(x, y + h, x, y + h - radius, radius);
+                }
+                context.closePath();
+            }
+
+            /**
+             * =====================================================================
+             * 이벤트 바인딩 (입력창, 슬라이더, 증감 버튼, 초기화, 리사이즈)
+             * =====================================================================
+             */
+            function bindInputPair(fieldKey, inputEl, sliderEl) {
+                // 숫자 직접 입력 시 즉시 계산
+                inputEl.addEventListener('input', function () {
+                    state[fieldKey] = sanitizeValue(inputEl.value, fieldKey, false);
+                    recalculate();
+                });
+
+                // 입력창에서 포커스가 벗어날 때 빈 칸이나 포맷 정리
+                inputEl.addEventListener('blur', function () {
+                    state[fieldKey] = sanitizeValue(inputEl.value, fieldKey, true);
+                    recalculate();
+                });
+
+                // 음수 기호(-) 키 입력 원천 차단
+                inputEl.addEventListener('keydown', function (e) {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                        e.preventDefault();
+                        showValidationNotice('warn', '0 이상의 양수만 입력할 수 있습니다.', 2400);
+                    }
+                });
+
+                // 슬라이더 조작 시 입력창 및 결과 동기화
+                sliderEl.addEventListener('input', function () {
+                    const val = Number(sliderEl.value);
+                    state[fieldKey] = val;
+                    inputEl.value = String(val);
+                    recalculate();
+                });
+            }
+
+            bindInputPair('price', priceInput, priceSlider);
+            bindInputPair('cost', costInput, costSlider);
+            bindInputPair('volume', volumeInput, volumeSlider);
+
+            // 터치용 +/- 증감 버튼 이벤트
+            stepButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const fieldKey = btn.getAttribute('data-target');
+                    const step = Number(btn.getAttribute('data-step'));
+                    const nextVal = state[fieldKey] + step;
+                    state[fieldKey] = sanitizeValue(nextVal, fieldKey, true);
+                    recalculate();
+                });
+            });
+
+            // 기본값으로 초기화 버튼 이벤트
+            resetBtn.addEventListener('click', function () {
+                state.price = DEFAULTS.price;
+                state.cost = DEFAULTS.cost;
+                state.volume = DEFAULTS.volume;
+
+                priceInput.value = String(DEFAULTS.price);
+                priceSlider.value = String(DEFAULTS.price);
+
+                costInput.value = String(DEFAULTS.cost);
+                costSlider.value = String(DEFAULTS.cost);
+
+                volumeInput.value = String(DEFAULTS.volume);
+                volumeSlider.value = String(DEFAULTS.volume);
+
+                showValidationNotice('', '');
+                recalculate();
+            });
+
+            // 화면 크기 변경 시 차트 자동 리사이즈 대응
+            if (typeof ResizeObserver !== 'undefined') {
+                const resizeObserver = new ResizeObserver(() => {
+                    drawChart();
+                });
+                resizeObserver.observe(chartWrapper);
+            } else {
+                window.addEventListener('resize', drawChart);
+            }
+
+            // 초기 실행
+            recalculate();
+        })();
+    </script>
+</body>
+</html>
